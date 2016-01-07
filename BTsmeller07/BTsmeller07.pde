@@ -1,13 +1,19 @@
 // - - - - - - - - - - - - - - - - - - - - - - - 
-// BTsmeller03
+// BTsmeller07
 // Bluetooth As Sensor Concept
 // SCOTT SULLIVAN
 // - - - - - - - - - - - - - - - - - - - - - - -
 
-// ** Requires Android API, Java, and the Ketai Library **
 
-// FEATURES TO ADD
-// On-phone storage
+// - - FEATURES TO ADD - - //
+// New Views
+//  Buttons etc.
+// Logic around behavior
+//  First time seen, last time seen
+//  Days in a row seen
+//  Static location or moving around
+// Android stuff
+//  Run in background
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -35,16 +41,18 @@ boolean isConfiguring = true;
 
 //counters and logic
 ArrayList<String> devicesDiscovered = new ArrayList(); 
+ArrayList<String> names;
 Device[] devices = new Device[0];
 boolean isThere;
 int infoYpos = 100;
 int foundYpos = 400;
+long dbCount;
 
 double longitude, latitude, altitude;
 float flat, flon;
 KetaiLocation location;
 
-long dbCount;
+
 
 //SQL
 KetaiSQLite db;
@@ -84,84 +92,15 @@ void setup() {
   }
 }
 
-// draw loop
+
 void draw() {
+  updateLocation();
+
   pullTime();
-  
-  // look for location
-  if(location == null)
-    location = new KetaiLocation(this);
     
-
-
-  if (isConfiguring)
-  {
-    ArrayList<String> names;
-    background(0);
-    names = bt.getDiscoveredDeviceNames();
-
-    info = "\n";
-    foundDevices = "\n";
-    names = bt.getDiscoveredDeviceNames();
-
-
-
-    
-
-    //listen for devices and list them with their MAC addresses
-    for (int i=0; i < names.size(); i++) {
-      info += i+1 +". "+bt.lookupAddressByName(names.get(i)) +" (" + names.get(i).toString() + ")" + "\n";
-      for (int o = 0; o < devices.length; o ++ ) {
-        if (bt.lookupAddressByName(names.get(i)).equals(devices[o].MAC) == false) {
-          isThere = false;
-        } else {
-          isThere = true;
-          break;
-        }
-      }
-      if (!isThere) {
-        Device d = new Device(currentTime, bt.lookupAddressByName(names.get(i)), names.get(i).toString(), flat, flon);
-        devices = (Device[]) append(devices, d);
-        recordToDB(currentTime, bt.lookupAddressByName(names.get(i)), names.get(i).toString(), flat, flon);
-      }
-    }
-
-    for (int i=devices.length-1; i > -1; i--) {
-      
-      foundDevices += devices[i].name + " - " + devices[i].flat + " / " + devices[i].flon + "\n";
-    }
-    
-  //labels
-  textFont(bigBlack);
-  text("Current Devices:" + " (" + names.size() + ")", 20, infoYpos);
-  textFont(smallBlack);
-  text(info, 40, infoYpos + 10);
-  textFont(smallBlack);
+  logBtDevices();
   
-  text("times checked: "+ " (" + timeCount + ") / " + "Current Devices:" + " (" + names.size() + ")", 20, 50);
-  }
-  fill(0);
-  rect( 0, 360, width, height-360);
-  fill(255);
-  textFont(bigBlack);
-  text("Devices in database: " + dbCount, 20, foundYpos);
-  textFont(smallBlack);
-  text(foundDevices, 40, foundYpos + 10);
-  
-  
-  // location stuff
-  if (location.getProvider() == "none")
-    text("Location data is unavailable. \n" +
-      "Please check your location settings.", 20, height-100);
-  else
-    //text("Latitude: " + flat + "\n" + 
-    //  "Longitude: " + flon + "\n", 
-    //  20, height-100);  
+  screenOne();
 
-
-  if (currentTime > newTime) {
-    discoverNew();
-    timeCount++;
-    newTime = currentTime + 30000;
-  }
+  resetTimer();
 }
